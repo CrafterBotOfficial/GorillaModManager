@@ -15,6 +15,8 @@ namespace GorillaModManager.ViewModels
 {
     public class ModManagerViewModel : ViewModelBase
     {
+        public static ModManagerViewModel Instance;
+
         public List<ManagerMod> InstalledMods
         {
             get
@@ -40,6 +42,7 @@ namespace GorillaModManager.ViewModels
 
         public ModManagerViewModel()
         {
+            Instance = this;
             this.WhenAnyValue(x => x.SearchText)
                 .Throttle(TimeSpan.FromMilliseconds(200))
                 .ObserveOn(RxApp.MainThreadScheduler)
@@ -84,7 +87,7 @@ namespace GorillaModManager.ViewModels
                 {
                     // load game banana info
                     string gameBananaInfoPath = Path.Combine(modPath, "gamebanana.json");
-                    if (File.Exists(gameBananaInfoPath)) 
+                    if (File.Exists(gameBananaInfoPath))
                         gameBananaInfo = JsonConvert.DeserializeObject<GameBananaInfo>(File.ReadAllText(gameBananaInfoPath)) ?? throw new Exception("Failed to parse game banana info. Please delete the cache file at " + gameBananaInfoPath);
 
                     var types = AssemblyDefinition

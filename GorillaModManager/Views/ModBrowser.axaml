@@ -94,7 +94,7 @@
 										<Run Foreground="Gray" Text="{Binding ModAuthor}"/>
 									</TextBlock>
 
-									<TextBlock
+									<!-- <TextBlock
 										HorizontalAlignment="Left"
 										VerticalAlignment="Bottom"
 										Margin="5"
@@ -103,10 +103,10 @@
 										<Run Text="{Binding LikesCount}"/>
 										<Run Text="&#x0a;Downloads:"/>
 										<Run Text="{Binding DownloadsCount}"/>
-									</TextBlock>
+									</TextBlock> -->
 
 									<Button Content="Install"
-											Name="{Binding DownloadUrl}"
+											Name="{Binding GitUrl}"
 											Command="{Binding InstallMod}"
 											Margin="5"
 											VerticalAlignment="Bottom"

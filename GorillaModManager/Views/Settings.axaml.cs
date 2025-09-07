@@ -57,7 +57,7 @@ namespace GorillaModManager.Views
                 ToggleButton.IsEnabled = false;
             }
 
-            if(Directory.Exists(Path.Combine(ManagerSettings.Default.GamePath, "BepInEx")))
+            if (Directory.Exists(Path.Combine(ManagerSettings.Default.GamePath, "BepInEx")))
             {
                 BackupMods.IsEnabled = true;
                 UninstallButton.IsEnabled = true;
@@ -73,16 +73,16 @@ namespace GorillaModManager.Views
             IReadOnlyList<IStorageFile> files = await TopLevel.GetTopLevel(this).StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
             {
                 AllowMultiple = false,
-                Title = "Select 'Gorilla Tag.exe'." ,
+                Title = "Select 'Gorilla Tag.exe'.",
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Gorilla Filter") 
-                    { 
+                    new FilePickerFileType("Gorilla Filter")
+                    {
                         Patterns =
                         [
                             "Gorilla Tag.exe"
                         ]
-                    } 
+                    }
                 ]
             });
 
@@ -101,7 +101,7 @@ namespace GorillaModManager.Views
             {
                 case "InstallButton":
                     await ItemInstaller.InstallFromUrl(
-                        "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.1/BepInEx_win_x64_5.4.23.1.zip",
+                        "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.3/BepInEx_win_x64_5.4.23.3.zip",
                         string.Empty);
 
                     HandlePathButtons();
@@ -126,7 +126,7 @@ namespace GorillaModManager.Views
 
                     ButtonResult result = await box.ShowAsync();
 
-                    if(result == ButtonResult.Yes)
+                    if (result == ButtonResult.Yes)
                     {
                         try
                         {
@@ -183,7 +183,7 @@ namespace GorillaModManager.Views
 
         public void LaunchGorillaTag(object sender, RoutedEventArgs args)
         {
-            if(Directory.GetParent(ManagerSettings.Default.GamePath).Name == "common")
+            if (Directory.GetParent(ManagerSettings.Default.GamePath).Name == "common")
             {
                 Process.Start(new ProcessStartInfo
                 {

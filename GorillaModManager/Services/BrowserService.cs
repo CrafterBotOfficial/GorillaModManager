@@ -1,90 +1,93 @@
-﻿using GameBananaAPI;
-using GameBananaAPI.Data;
-using GorillaModManager.Models;
-using GorillaModManager.Models.Mods;
-using GorillaModManager.Utils;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net;
+﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Avalonia.Threading;
+using GorillaModManager.Models.Mods;
+using MsBox.Avalonia;
 
 namespace GorillaModManager.Services
 {
     public class BrowserService
     {
-        public BlockList blockList;
-        public const string BlockListUrl = "https://raw.githubusercontent.com/pl2w/GorillaModManager/master/blocklist-ids.json";
+        public static string REMOTE_URL = "http://localhost:8000/";
+        private BrowserMod[] cachedMods;
 
-        public BrowserService()
+        public async Task<BrowserMod[]> GetAllMods()
         {
-            InitializeBlackList();
+            if (cachedMods == null)
+            {
+                string manifest = await FetchManifest();
+                if (manifest == null) return null;
+
+                cachedMods = Newtonsoft.Json.JsonConvert.DeserializeObject<BrowserMod[]>(manifest);
+                if (cachedMods == null)
+                {
+                    await Notify("Error", "Got bad manifest from server, please report on Github.");
+                    return null;
+                }
+            }
+            return cachedMods;
         }
 
-        private async void InitializeBlackList()
+        public async Task<BrowserMod[]> GetMods(int page)
         {
-            using var client = new HttpClient();
-            string json = await client.GetStringAsync(BlockListUrl);
-            blockList = JsonConvert.DeserializeObject<BlockList>(json) ?? throw new Exception("Failed to download & parse blacklisted mods.");
+            return ChunkArray(await GetAllMods(), page);
         }
 
-        public async Task<IEnumerable<BrowserMod>> GetMods(int page)
+        private async Task<string> FetchManifest()
         {
-            if (API.gameId == -1)
-                API.SetCurrentGame(9496);
+            using var httpClient = new HttpClient();
+            var requestTask = httpClient.GetAsync(REMOTE_URL + "/manifest.json");
 
-            while (blockList == null)
+            var resultTask = requestTask.ContinueWith(async task =>
             {
-                Debug.WriteLine("Blacklist hasn't been filled yet.");
-                await Task.Delay(1000);
-            }
+                if (task.IsCanceled)
+                {
+                    await Notify("Connection Error", "The request was canceled (likely a timeout).");
+                    return null;
+                }
 
-            SubfeedData data = await API.GetSubfeedData(page, string.Empty, "Mod", string.Empty);
+                if (task.IsFaulted)
+                {
+                    string exception = task.Exception?.Message;
+                    await Notify("Connection Error", "An exception occured while trying to connect\n" + exception);
+                    return null;
+                }
 
-            List<RecordData> subData = data._aRecords;
-            List<BrowserMod> modsToReturn = [];
+                var result = task.Result;
+                if (result.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    await Notify("Connection Error", "Failed to get manifest from remote server, check your internet connection.");
+                    // return await FetchManifest();
+                    return null;
+                }
 
-            foreach (RecordData item in subData)
+                string resultString = await result.Content.ReadAsStringAsync();
+                if (resultString == null || resultString.Length == 0)
+                {
+                    await Notify("Fatal", "Failed to read data from remote server.");
+                    return null;
+                }
+                return resultString;
+            })
+            .Unwrap();
+
+            return await resultTask;
+        }
+
+        private async Task Notify(string title, string message)
+        {
+            await Dispatcher.UIThread.Invoke(async () =>
             {
-                ProfilePageData profile = await API.GetModProfilePage(item._idRow);
+                await MessageBoxManager.GetMessageBoxStandard(title, message, MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsync();
+            });
+        }
 
-                if (profile._sDescription == null || profile._sDescription == string.Empty || profile._sDescription.Length == 0)
-                    continue;
-
-                if (profile._bIsWithheld || profile._bIsTrashed || profile._bIsPrivate)
-                    continue;
-
-                if (blockList.blockedAuthors.Contains(item._aSubmitter._idRow))
-                    continue;
-
-                if (blockList.blockedPages.Contains(item._idRow))
-                    continue;
-
-                DateTime dt = DateUtils.UnixTimeStampToDateTime(profile._tsDateAdded);
-                if (DateTime.Now < dt.AddDays(3))
-                    continue;
-
-                modsToReturn.Add(
-                    new BrowserMod(
-                        item._sName,
-                        profile._sDescription,
-                        item._aSubmitter._sName,
-                        API.GetDownloadURL(profile._aFiles[0]._idRow),
-                        API.GetCompleteImageURL(profile._aPreviewMedia._aImages[0]._sFile),
-                        profile._nDownloadCount,
-                        profile._nLikeCount,
-                        profile._aRequirements,
-                        profile._aFiles[0]._sMd5Checksum
-                    )
-                );
-            }
-
-            return modsToReturn;
+        private BrowserMod[] ChunkArray(BrowserMod[] original, int groupIndex)
+        {
+            // TODO
+            return original;
         }
     }
 }

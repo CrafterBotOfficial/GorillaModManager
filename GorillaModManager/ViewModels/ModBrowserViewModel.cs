@@ -13,6 +13,8 @@ namespace GorillaModManager.ViewModels
 {
     public class ModBrowserViewModel : ViewModelBase
     {
+        public static ModBrowserViewModel Instance;
+
         public List<BrowserMod> ModsForPage
         {
             get
@@ -27,7 +29,7 @@ namespace GorillaModManager.ViewModels
 
         List<BrowserMod> _modsForPage;
 
-        public BrowserService _service;
+        public BrowserService Service;
 
         public bool ModsFetched
         {
@@ -47,8 +49,10 @@ namespace GorillaModManager.ViewModels
 
         public ModBrowserViewModel()
         {
+            Instance = this;
+
             ModsFetched = false;
-            _service = new BrowserService();
+            Service = new BrowserService();
 
             SetModsForPage(_currentPage);
         }
@@ -56,13 +60,13 @@ namespace GorillaModManager.ViewModels
         private async void SetModsForPage(int page)
         {
             ModsFetched = false;
-            var mods = await _service.GetMods(page);
+            var mods = await Service.GetMods(page);
             SetVisibleMods(mods);
         }
 
         void SetVisibleMods(IEnumerable<BrowserMod> mods)
         {
-            ModsForPage = mods.ToList();
+            ModsForPage = mods.Where(x => !x.Hidden).ToList();
             ModsFetched = true;
         }
 
@@ -71,7 +75,7 @@ namespace GorillaModManager.ViewModels
             Debug.WriteLine($"{modUrl}");
 
             BrowserMod browserMod = FindModForUrl(modUrl);
-            InstallerMod mod = new InstallerMod(browserMod.DownloadUrl, browserMod.ModName);
+            InstallerMod mod = new InstallerMod(browserMod.GitUrl, browserMod.ModName);
 
             if (mod == null)
             {
@@ -96,7 +100,7 @@ namespace GorillaModManager.ViewModels
         {
             for (int i = 0; i < ModsForPage.Count; i++)
             {
-                if (ModsForPage[i].DownloadUrl == modUrl)
+                if (ModsForPage[i].GitUrl == modUrl)
                 {
                     return ModsForPage[i];
                 }

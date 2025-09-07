@@ -1,12 +1,17 @@
-﻿using GorillaModManager.Models.Mods;
+﻿using Avalonia;
+using Avalonia.Threading;
+using GorillaModManager.Install;
+using GorillaModManager.Models.Mods;
 using GorillaModManager.Models.Persistence;
 using GorillaModManager.Utils;
+using MsBox.Avalonia;
 using Newtonsoft.Json;
 using System;
+using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace GorillaModManager.Services
@@ -15,25 +20,53 @@ namespace GorillaModManager.Services
     {
         public static async Task InstallFromGameBanana(BrowserMod modToInstall)
         {
-            using var client = new HttpClient();
-
-            string fullPath = Path.Combine(ManagerSettings.Default.GamePath, "BepInEx", "plugins", modToInstall.ModName);
-            byte[] data = await client.GetByteArrayAsync(modToInstall.DownloadUrl);
-            string hash = GetMD5(data);
-
-            // TODO: add warning
-            if (modToInstall.ValidHash != hash)
+            if (string.IsNullOrEmpty(ManagerSettings.Default.GamePath))
+            {
+                await Notify("Game not found", "Please enter Gorilla Tags path into the settings.");
                 return;
+            }
 
-            if (!Directory.Exists(fullPath))
-                Directory.CreateDirectory(fullPath);
+            string buildDirectory = Path.Combine(await GetBuildDirectory(), modToInstall.CommitHash);
+            if (buildDirectory == null) return;
 
-            ZipFile.ExtractToDirectory(new MemoryStream(data), fullPath, true);
-            
-            // setup gamebanana cached info
-            await File.WriteAllTextAsync(Path.Combine(fullPath, "gamebanana.json"), JsonConvert.SerializeObject(
-                new GameBananaInfo(modToInstall.ThumbnailImageUrl, modToInstall.ModAuthor, modToInstall.ModShortDescription)
-                ));
+            var stateMachine = new IStep[]
+            {
+                new DownloadStep(),
+                new PrepBuild(),
+                new BuildStep(),
+            };
+
+            foreach (var step in stateMachine)
+            {
+                bool success = await step.Run(buildDirectory, modToInstall);
+                if (!success)
+                {
+                    await Notify("Failed step", "Failed install step");
+                    break;
+                }
+            }
+        }
+
+        private static async Task<string> GetBuildDirectory()
+        {
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "gorilla_build_dir");
+            if (Directory.Exists(path)) return path;
+
+            try { Directory.CreateDirectory(path); }
+            catch (Exception ex)
+            {
+                await Notify("Error", "Couldn't create build folder at " + path + " because:\n" + ex.Message);
+                return null;
+            }
+            return path;
+        }
+
+        public static async Task Notify(string title, string message)
+        {
+            await Dispatcher.UIThread.Invoke(async () =>
+            {
+                await MessageBoxManager.GetMessageBoxStandard(title, message, MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsync();
+            });
         }
 
         public static async Task InstallFromUrl(string url, string localPath)
@@ -43,20 +76,6 @@ namespace GorillaModManager.Services
             string fullPath = Path.Combine(ManagerSettings.Default.GamePath, localPath);
             byte[] data = await client.GetByteArrayAsync(url);
             ZipFile.ExtractToDirectory(new MemoryStream(data), fullPath, true);
-        }
-
-        // https://stackoverflow.com/questions/42543679/get-md5-checksum-of-byte-arrays-conent-in-c-sharp
-        public static string GetMD5(byte[] inputData)
-        {
-            MemoryStream stream = new MemoryStream();
-            stream.Write(inputData, 0, inputData.Length);
-            stream.Seek(0, SeekOrigin.Begin);
-
-            using (var md5Instance = MD5.Create())
-            {
-                var hashResult = md5Instance.ComputeHash(stream);
-                return BitConverter.ToString(hashResult).Replace("-", "").ToLowerInvariant();
-            }
         }
     }
 }
