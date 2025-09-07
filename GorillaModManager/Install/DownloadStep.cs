@@ -16,11 +16,11 @@ public class DownloadStep : IStep
             return true;
         }
 
-        var gitCloneProcess = Process.Start("git", $"clone {mod.GitUrl} \"{buildDirectory}\"");
+        var gitCloneProcess = Process.Start("git", $"clone {mod.Url} \"{buildDirectory}\"");
         await gitCloneProcess.WaitForExitAsync();
         if (gitCloneProcess.ExitCode != 0)
         {
-            await ItemInstaller.Notify("Error", "Failed to download from " + mod.GitUrl);
+            await ItemInstaller.Notify("Error", "Failed to download from " + mod.Url);
             return false;
         }
 

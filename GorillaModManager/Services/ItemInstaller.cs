@@ -26,6 +26,12 @@ namespace GorillaModManager.Services
                 return;
             }
 
+            if (!modToInstall.Url.EndsWith(".git")) {
+                Console.WriteLine("Installing from URL");
+                await InstallFromUrl(modToInstall.Url, "BepInEx/plugins");
+                return;
+            }
+
             string buildDirectory = Path.Combine(await GetBuildDirectory(), modToInstall.CommitHash);
             if (buildDirectory == null) return;
 

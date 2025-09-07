@@ -106,7 +106,7 @@
 									</TextBlock> -->
 
 									<Button Content="Install"
-											Name="{Binding GitUrl}"
+											Name="{Binding Url}"
 											Command="{Binding InstallMod}"
 											Margin="5"
 											VerticalAlignment="Bottom"

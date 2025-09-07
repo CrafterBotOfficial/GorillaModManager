@@ -75,7 +75,7 @@ namespace GorillaModManager.ViewModels
             Debug.WriteLine($"{modUrl}");
 
             BrowserMod browserMod = FindModForUrl(modUrl);
-            InstallerMod mod = new InstallerMod(browserMod.GitUrl, browserMod.ModName);
+            InstallerMod mod = new InstallerMod(browserMod.Url, browserMod.ModName);
 
             if (mod == null)
             {
@@ -100,7 +100,7 @@ namespace GorillaModManager.ViewModels
         {
             for (int i = 0; i < ModsForPage.Count; i++)
             {
-                if (ModsForPage[i].GitUrl == modUrl)
+                if (ModsForPage[i].Url == modUrl)
                 {
                     return ModsForPage[i];
                 }
@@ -110,3 +110,4 @@ namespace GorillaModManager.ViewModels
         }
     }
 }
+

@@ -18,7 +18,7 @@ namespace GorillaModManager.Models.Mods
         public required string ModName { get; set; }
         public required string ModShortDescription { get; set; }
         public required string ModAuthor { get; set; }
-        public required string GitUrl { get; set; }
+        public required string Url { get; set; }
         public required string CommitHash { get; set; }
         public required string ThumbnailImageUrl { get; set; }
         public string Dependencies;

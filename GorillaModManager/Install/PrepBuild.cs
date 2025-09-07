@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using GorillaModManager.Models.Mods;
 using GorillaModManager.Services;
-using Microsoft.CodeAnalysis.Scripting;
 
 namespace GorillaModManager.Install;
 
