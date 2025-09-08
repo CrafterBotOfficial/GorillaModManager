@@ -26,7 +26,8 @@ namespace GorillaModManager.Services
                 return;
             }
 
-            if (!modToInstall.Url.EndsWith(".git")) {
+            if (!modToInstall.Url.EndsWith(".git"))
+            {
                 Console.WriteLine("Installing from URL");
                 await InstallFromUrl(modToInstall.Url, "BepInEx/plugins");
                 return;

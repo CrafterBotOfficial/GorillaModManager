@@ -10,6 +10,8 @@ using System;
 using GorillaModManager.Views;
 using GorillaModManager.ViewModels;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using ReactiveUI;
 
 namespace GorillaModManager.Models.Mods
 {
@@ -24,10 +26,18 @@ namespace GorillaModManager.Models.Mods
         public string Dependencies;
         public bool Hidden;
 
+        public ICommand OnInstallClickCommand { get; }
+
+        public BrowserMod()
+        { 
+            OnInstallClickCommand = ReactiveCommand.Create(InstallMod);
+        }
+
         public async Task InstallMod()
         {
             await InstallMod(false);
         }
+
 
         public async Task InstallMod(bool asDependency)
         {

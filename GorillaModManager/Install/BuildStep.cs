@@ -1,7 +1,9 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Reactive;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DynamicData;
 using GorillaModManager.Install;
@@ -49,9 +51,16 @@ public class BuildStep : IStep
         if (File.Exists(expectedBuildScript)) return expectedBuildScript;
 
         using var httpClient = new HttpClient();
-        var result = await httpClient.GetAsync($"{BrowserService.REMOTE_URL}/build_scripts/{mod.ModName.Trim()}.cake") ?? null;
+
+        string url = $"{BrowserService.REMOTE_URL}/build_scripts/{mod.ModName.Trim()}.cake";
+        url = Regex.Replace(url, @"\s+", "");
+
+        var result = await httpClient.GetAsync(url) ?? null;
         if (result == null || result.StatusCode != System.Net.HttpStatusCode.OK)
+        {
+            Console.WriteLine("Url invalid " + url);
             return null;
+        }
 
         string content = await result.Content.ReadAsStringAsync();
         await File.WriteAllTextAsync(expectedBuildScript, content);

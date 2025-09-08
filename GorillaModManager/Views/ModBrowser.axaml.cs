@@ -1,7 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using GorillaModManager.ViewModels;
+using MsBox.Avalonia.ViewModels.Commands;
+using ReactiveUI;
 using System;
+using System.Windows.Input;
 
 namespace GorillaModManager.Views
 {
@@ -10,20 +13,13 @@ namespace GorillaModManager.Views
         public ModBrowser()
         {
             InitializeComponent();
-            this.DataContext = new ModBrowserViewModel();
-
+            DataContext = new ModBrowserViewModel();
             SearchIndex.IsReadOnly = true;
-        }
-
-        public void OnInstallButtonClick(object sender, RoutedEventArgs e)
-        {
-            string url = ((Button)sender).Name;
-            (DataContext as ModBrowserViewModel).OnInstallClick(url);
         }
 
         public void OnPageClick(object sender, RoutedEventArgs e)
         {
-
+            ((ModBrowserViewModel)DataContext).OnPageChanged(((Button)sender).Name);
         }
     }
 }

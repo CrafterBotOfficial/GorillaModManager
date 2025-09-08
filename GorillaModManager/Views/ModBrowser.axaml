@@ -34,6 +34,7 @@
 					<TextBox Width="5"
 							 Height="20"
 							 Watermark="Page"
+                             Text="{Binding PageSearchTextBox}"
 							 Margin="39 0"
 							 Name="SearchIndex" HorizontalAlignment="Right"/>
 					
@@ -106,8 +107,7 @@
 									</TextBlock> -->
 
 									<Button Content="Install"
-											Name="{Binding Url}"
-											Command="{Binding InstallMod}"
+                                            Command="{Binding OnInstallClickCommand}"
 											Margin="5"
 											VerticalAlignment="Bottom"
 											HorizontalAlignment="Right"

@@ -1,16 +1,38 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using GorillaModManager.Models.Mods;
+using GorillaModManager.ViewModels;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MsBox.Avalonia;
+using ReactiveUI;
 
 namespace GorillaModManager.Services
 {
     public class BrowserService
     {
+#if DEBUG
         public static string REMOTE_URL = "http://localhost:8000/";
+#else
+        public static string REMOTE_URL = "https://raw.githubusercontent.com/CrafterBotOfficial/GorillaTagModManager_Mods/refs/heads/master/"; //"http://localhost:8000/";
+#endif
+
+        public int VisisbleModCount
+        {
+            get
+            {
+                if (cachedMods == null)
+                {
+                    Console.WriteLine("Getter can not be called yet.");
+                    return 0;
+                }
+                return cachedMods.Where(x => !x.Hidden).Count();
+            }
+        }
+
         private BrowserMod[] cachedMods;
 
         public async Task<BrowserMod[]> GetAllMods()
@@ -30,9 +52,12 @@ namespace GorillaModManager.Services
             return cachedMods;
         }
 
+        /// <summary>Only returns none-hidden mods </summary>
         public async Task<BrowserMod[]> GetMods(int page)
         {
-            return ChunkArray(await GetAllMods(), page);
+            Console.WriteLine("Displaying page: " + page);
+            var filteredMods = (await GetAllMods()).Where(x => !x.Hidden);
+            return ChunkArray(filteredMods.ToArray(), page);
         }
 
         private async Task<string> FetchManifest()
@@ -86,8 +111,8 @@ namespace GorillaModManager.Services
 
         private BrowserMod[] ChunkArray(BrowserMod[] original, int groupIndex)
         {
-            // TODO
-            return original;
+            var result = original.Chunk(ModBrowserViewModel.ENTRIES_PER_PAGE).ToArray()[groupIndex];
+            return result;
         }
     }
 }

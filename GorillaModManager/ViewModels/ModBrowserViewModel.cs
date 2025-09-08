@@ -1,50 +1,43 @@
-﻿using GorillaModManager.Models.Persistence;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using GorillaModManager.Models.Persistence;
 using GorillaModManager.Services;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using ReactiveUI;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using GorillaModManager.Models.Mods;
+using System;
+using System.Globalization;
+using System.Windows.Input;
 
 namespace GorillaModManager.ViewModels
 {
     public class ModBrowserViewModel : ViewModelBase
     {
         public static ModBrowserViewModel Instance;
+        public const int ENTRIES_PER_PAGE = 6;
 
-        public List<BrowserMod> ModsForPage
+        private string _pageSearchTextBox;
+        public string PageSearchTextBox
         {
-            get
-            {
-                return _modsForPage;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _modsForPage, value);
-            }
+            get => _pageSearchTextBox;
+            set => this.RaiseAndSetIfChanged(ref _pageSearchTextBox, value);
         }
 
-        List<BrowserMod> _modsForPage;
+        public ObservableCollection<BrowserMod> ModsForPage { get; set; }
 
         public BrowserService Service;
 
         public bool ModsFetched
         {
-            get
-            {
-                return _modsFetched;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _modsFetched, value);
-            }
+            get => _modsFetched;
+            set => this.RaiseAndSetIfChanged(ref _modsFetched, value);
         }
 
         bool _modsFetched;
-
         int _currentPage = 0;
 
         public ModBrowserViewModel()
@@ -52,6 +45,7 @@ namespace GorillaModManager.ViewModels
             Instance = this;
 
             ModsFetched = false;
+            ModsForPage = new ObservableCollection<BrowserMod>(new BrowserMod[0]);
             Service = new BrowserService();
 
             SetModsForPage(_currentPage);
@@ -60,40 +54,42 @@ namespace GorillaModManager.ViewModels
         private async void SetModsForPage(int page)
         {
             ModsFetched = false;
-            var mods = await Service.GetMods(page);
-            SetVisibleMods(mods);
-        }
 
-        void SetVisibleMods(IEnumerable<BrowserMod> mods)
-        {
-            ModsForPage = mods.Where(x => !x.Hidden).ToList();
+            // TODO REDO
+            BrowserMod[] tempArray = await Service.GetMods(page);
+            ModsForPage.Clear();
+            foreach (var info in tempArray)
+                ModsForPage.Add(info);
+
             ModsFetched = true;
         }
 
-        public async void OnInstallClick(string modUrl)
+        // void SetVisibleMods(IEnumerable<BrowserMod> mods)
+        // {
+        // ModsForPage = mods.Where(x => !x.Hidden).ToList();
+        // ModsFetched = true;
+        // }
+
+        public void OnPageChanged(string buttonName)
         {
-            Debug.WriteLine($"{modUrl}");
+            if (string.IsNullOrEmpty(buttonName)) return;
 
-            BrowserMod browserMod = FindModForUrl(modUrl);
-            InstallerMod mod = new InstallerMod(browserMod.Url, browserMod.ModName);
-
-            if (mod == null)
+            int totalPages = Service.VisisbleModCount / ENTRIES_PER_PAGE;
+            int newPage = buttonName switch
             {
-                SetModsForPage(_currentPage);
+                "Prev" => _currentPage - 1,
+                "Next" => _currentPage + 1,
+                _ => _currentPage,
+            };
+
+            if (newPage > totalPages || newPage < 0)
+            {
+                Console.WriteLine("Max/min page reached");
                 return;
             }
-
-            if (!Directory.Exists(Path.Combine(ManagerSettings.Default.GamePath, "BepInEx", "plugins")))
-            {
-                var box = MessageBoxManager
-                    .GetMessageBoxStandard("Browser Failure.", "You have not setup bepinex properly or your game path is set incorrectly.",
-                        ButtonEnum.Ok);
-
-                await box.ShowAsync();
-                return;
-            }
-
-            //await InstallationHandler.InstallFileFromUrl(mod, "BepInEx/plugins", true);
+            _currentPage = newPage;
+            SetModsForPage(_currentPage);
+            PageSearchTextBox = (newPage + 1).ToString();
         }
 
         private BrowserMod FindModForUrl(string modUrl)
